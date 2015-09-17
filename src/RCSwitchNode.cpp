@@ -5,9 +5,14 @@ Nan::Persistent<v8::Function> RCSwitchNode::constructor;
 void RCSwitchNode::Init(v8::Local<v8::Object> exports) {
   Nan::HandleScope scope;
 
-  if( wiringPiSetup() == -1 ) {
-    Nan::ThrowTypeError("rcswitch: GPIO initialization failed");
-    return;
+  if(getuid() > 0) {
+    if(wiringPiSetupSys() == -1) {
+      Nan::ThrowTypeError("rcswitch: GPIO initialization failed. Expose pins in /sys/class/gpio or re-run as root.");
+      return;
+    }
+  } else if(wiringPiSetup() == -1 ) {
+      Nan::ThrowTypeError("rcswitch: GPIO initialization failed. Try exposeing pins in /sys/class/gpio and re-running as standard user.");
+      return;
   }
 
   // Prepare constructor template
@@ -22,8 +27,13 @@ void RCSwitchNode::Init(v8::Local<v8::Object> exports) {
   Nan::SetPrototypeMethod(tpl, "send", Send);
   Nan::SetPrototypeMethod(tpl, "enableTransmit", EnableTransmit);
   Nan::SetPrototypeMethod(tpl, "disableTransmit", DisableTransmit);
+  Nan::SetPrototypeMethod(tpl, "enableReceive", EnableReceive);
+  Nan::SetPrototypeMethod(tpl, "disableReceive", DisableReceive);
   Nan::SetPrototypeMethod(tpl, "switchOn", SwitchOn);
   Nan::SetPrototypeMethod(tpl, "switchOff", SwitchOff);
+  Nan::SetPrototypeMethod(tpl, "available", Available);
+  Nan::SetPrototypeMethod(tpl, "resetAvailable", ResetAvailable);
+  Nan::SetPrototypeMethod(tpl, "getReceivedValue", GetReceivedValue);
 
   constructor.Reset(tpl->GetFunction());
   exports->Set(Nan::New("RCSwitch").ToLocalChecked(), tpl->GetFunction());
@@ -117,12 +127,60 @@ void RCSwitchNode::DisableTransmit(const Nan::FunctionCallbackInfo<v8::Value>& i
   info.GetReturnValue().Set(true);
 }
 
+// notification.EnableReceive();
+void RCSwitchNode::EnableReceive(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+  RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
+
+  v8::Local<v8::Value> pinNr = info[0];
+  if(pinNr->IsInt32()) {
+    obj->rcswitch.enableReceive(pinNr->Int32Value());
+    info.GetReturnValue().Set(true);
+  } else {
+    info.GetReturnValue().Set(false);
+  }
+}
+
+// notification.disableReceive();
+void RCSwitchNode::DisableReceive(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
+  obj->rcswitch.disableReceive();
+  info.GetReturnValue().Set(true);
+}
+
 void RCSwitchNode::SwitchOn(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   SwitchOp(info, true);
 }
 
 void RCSwitchNode::SwitchOff(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   SwitchOp(info, false);
+}
+
+// notification.available();
+void RCSwitchNode::Available(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
+  info.GetReturnValue().Set(Nan::New<v8::Boolean>(obj->rcswitch.available()));
+}
+
+// notification.resetAvailable();
+void RCSwitchNode::ResetAvailable(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
+  obj->rcswitch.resetAvailable();
+  info.GetReturnValue().Set(true);
+}
+
+// notification.getReceivedValue();
+void RCSwitchNode::GetReceivedValue(const Nan::FunctionCallbackInfo<v8::Value>& info) {
+  Nan::HandleScope scope;
+
+  RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
+  info.GetReturnValue().Set(Nan::New<v8::Uint32>((uint32_t)obj->rcswitch.getReceivedValue()));
 }
 
 // notification.protocol=
