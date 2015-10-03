@@ -15,12 +15,12 @@ It should be compatible with Node 0.8, 0.10 and 0.12 (tested only on 0.10 and 0.
     1. Start node with root access (not a good idea and can be unreliable).
     2. The better method is to expose the GPIO pins in `/sys/class/gpio` using the [gpio tool](https://projects.drogon.net/raspberry-pi/wiringpi/the-gpio-utility/) that comes with WiringPi. Example:
     ```
-    gpio export 27 out
+    sudo gpio export 27 in
     ```
     And give the user permission to access the GPIO pins:
     ```
-    chgrp -R dialout /sys/class/gpio
-    chmod -R g+rw /sys/class/gpio
+    sudo chgrp -R dialout /sys/class/gpio/gpio27/
+    sudo chmod -R g+rw /sys/class/gpio/gpio27/
     ```
     The above 3 lines can be added to `/etc/rc.local` to allow the GPIO pins to be exposed on start-up.
 
