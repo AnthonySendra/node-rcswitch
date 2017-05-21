@@ -1,4 +1,5 @@
 #include "RCSwitchNode.h"
+#include <unistd.h>
 
 Nan::Persistent<v8::Function> RCSwitchNode::constructor;
 
