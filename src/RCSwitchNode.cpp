@@ -98,9 +98,7 @@ void RCSwitchNode::Send(const Nan::FunctionCallbackInfo<v8::Value>& info) {
   Nan::HandleScope scope;
 
   RCSwitchNode* obj = ObjectWrap::Unwrap<RCSwitchNode>(info.Holder());
-
-  Nan::Utf8String v8str(info[0]);
-  obj->rcswitch.send(*v8str);
+  obj->rcswitch.send(info[0]->Int32Value());
 
   info.GetReturnValue().Set(true);
 }
